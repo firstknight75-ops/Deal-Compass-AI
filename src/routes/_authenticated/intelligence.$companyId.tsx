@@ -13,8 +13,8 @@ import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getCompany } from "@/lib/marketplace.functions";
-import type { CompanyRow } from "@/lib/marketplace/types";
+import { getCompany, listCompanyOpportunityEdges } from "@/lib/marketplace.functions";
+import type { CompanyOpportunityEdgeRow, CompanyRow } from "@/lib/marketplace/types";
 
 export const Route = createFileRoute("/_authenticated/intelligence/$companyId")({
   head: () => ({ meta: [{ title: "ملف الشركة — ديل كومباس AI+" }] }),
@@ -24,9 +24,15 @@ export const Route = createFileRoute("/_authenticated/intelligence/$companyId")(
 function CompanyDetailPage() {
   const { companyId } = Route.useParams();
   const getCompanyRow = useServerFn(getCompany);
+  const listEdges = useServerFn(listCompanyOpportunityEdges);
   const { data: company, isLoading } = useQuery({
     queryKey: ["company", companyId],
     queryFn: () => getCompanyRow({ data: { id: companyId } }),
+  });
+
+  const { data: edges = [] } = useQuery({
+    queryKey: ["company-opportunity-edges", companyId],
+    queryFn: () => listEdges({ data: { id: companyId } }),
   });
 
   return (
@@ -43,14 +49,23 @@ function CompanyDetailPage() {
             جارٍ تحميل ملف الشركة…
           </div>
         ) : (
-          <CompanyProfile company={company as CompanyRow} />
+          <CompanyProfile
+            company={company as CompanyRow}
+            edges={edges as CompanyOpportunityEdgeRow[]}
+          />
         )}
       </main>
     </AppShell>
   );
 }
 
-function CompanyProfile({ company }: { company: CompanyRow }) {
+function CompanyProfile({
+  company,
+  edges,
+}: {
+  company: CompanyRow;
+  edges: CompanyOpportunityEdgeRow[];
+}) {
   return (
     <div className="space-y-6">
       <Card className="p-6 space-y-5">
@@ -102,6 +117,29 @@ function CompanyProfile({ company }: { company: CompanyRow }) {
       </Card>
 
       <Card className="p-5 space-y-3">
+        <h2 className="font-semibold">الفرص المرتبطة</h2>
+        {edges.length === 0 ? (
+          <div className="text-sm text-muted-foreground">
+            لا توجد علاقات فرص مرتبطة بهذه الشركة بعد.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {edges.map((edge) => (
+              <div key={edge.id} className="rounded-md border border-border p-3 text-sm">
+                <div className="font-medium">
+                  {RELATIONSHIP_LABEL[edge.relationship] ?? edge.relationship}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  النوع: {edge.opportunity_kind === "general" ? "فرصة عامة" : "فرصة خاصة"} • الثقة:{" "}
+                  {edge.confidence_score}%
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 space-y-3">
         <h2 className="font-semibold">ملاحظات استخباراتية</h2>
         <ul className="list-disc list-inside text-sm text-muted-foreground leading-7 space-y-1">
           <li>درجة الثقة والمخاطر أولية وقابلة للتحسين بعد التحقق من الوثائق والتعاملات.</li>
@@ -112,6 +150,17 @@ function CompanyProfile({ company }: { company: CompanyRow }) {
     </div>
   );
 }
+
+const RELATIONSHIP_LABEL: Record<string, string> = {
+  posted_by: "نُشرت بواسطة",
+  buyer: "مشتري",
+  seller: "بائع",
+  supplier: "مورد",
+  manufacturer: "مصنّع",
+  distributor: "موزع",
+  mentioned_in: "مذكورة في",
+  recommended_for: "موصى بها لـ",
+};
 
 function Info({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (

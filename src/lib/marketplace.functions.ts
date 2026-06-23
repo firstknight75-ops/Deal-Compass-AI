@@ -8,11 +8,13 @@ import {
   SPECIAL_OPPORTUNITY_TYPES,
   type GeneralOpportunityRow,
   type MarketplaceDatabase,
+  type CompanyOpportunityEdgeRow,
   type CompanyRow,
   type OpportunityActivityRow,
   type OpportunityDocumentRow,
   type RadarSourceRow,
   type RecommendationRow,
+  type UserRoleRow,
   type SpecialOpportunityRow,
   type TradeCategoryRow,
 } from "@/lib/marketplace/types";
@@ -621,4 +623,125 @@ export const listRadarSources = createServerFn({ method: "GET" })
 
     if (error) throw new Error("تعذر تحميل مصادر الرادار");
     return (rows ?? []) as RadarSourceRow[];
+  });
+
+const radarSourceInput = z.object({
+  name: z.string().min(2).max(200),
+  source_type: z.enum([
+    "public_website",
+    "government_tender",
+    "rss",
+    "supplier_website",
+    "business_directory",
+    "public_telegram",
+    "partner_feed",
+    "admin_upload",
+  ]),
+  base_url: z.string().url().optional().nullable(),
+  country: z.string().max(80).optional().nullable(),
+  language: z.string().min(2).max(12).default("ar"),
+  is_active: z.boolean().default(false),
+});
+
+const radarSourceUpdateInput = radarSourceInput.partial().extend({ id: z.string().uuid() });
+
+/**
+ * Lists current authenticated user's platform roles.
+ */
+export const listMyRoles = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: rows, error } = await supabase
+      .from("user_roles")
+      .select("id, user_id, role, granted_at, revoked_at")
+      .eq("user_id", context.userId)
+      .is("revoked_at", null);
+
+    if (error) throw new Error("تعذر تحميل الصلاحيات");
+    return (rows ?? []) as UserRoleRow[];
+  });
+
+/**
+ * Creates an Opportunity Radar source. RLS restricts this to admin/moderator roles.
+ */
+export const createRadarSource = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => radarSourceInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: row, error } = await supabase
+      .from("radar_sources")
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) throw new Error("تعذر إنشاء مصدر الرادار. تأكد من امتلاك صلاحية المشرف.");
+    return row as RadarSourceRow;
+  });
+
+/**
+ * Updates an Opportunity Radar source. RLS restricts this to admin/moderator roles.
+ */
+export const updateRadarSource = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => radarSourceUpdateInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { id, ...patch } = data;
+    const { data: row, error } = await supabase
+      .from("radar_sources")
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error("تعذر تحديث مصدر الرادار. تأكد من امتلاك صلاحية المشرف.");
+    return row as RadarSourceRow;
+  });
+
+/**
+ * Lists Knowledge Graph edges connecting a company to opportunities.
+ */
+export const listCompanyOpportunityEdges = createServerFn({ method: "GET" })
+  .validator((input: unknown) => idInput.parse(input))
+  .handler(async ({ data }) => {
+    const supabase = getPublicMarketplaceClient();
+    const { data: rows, error } = await supabase
+      .from("company_opportunity_edges")
+      .select(
+        "id, company_id, opportunity_kind, general_opportunity_id, special_opportunity_id, relationship, confidence_score, source, created_at",
+      )
+      .eq("company_id", data.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) throw new Error("تعذر تحميل علاقات الشركة");
+    return (rows ?? []) as CompanyOpportunityEdgeRow[];
+  });
+
+/**
+ * Creates a short-lived signed URL for an owned special opportunity document.
+ */
+export const createSpecialOpportunityDocumentSignedUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => idInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: document, error: documentError } = await supabase
+      .from("opportunity_documents")
+      .select("id, bucket_id, storage_path")
+      .eq("id", data.id)
+      .eq("uploaded_by", context.userId)
+      .is("deleted_at", null)
+      .single();
+
+    if (documentError) throw new Error("تعذر تحميل المستند");
+
+    const { data: signed, error: signedError } = await supabase.storage
+      .from(document.bucket_id)
+      .createSignedUrl(document.storage_path, 300);
+
+    if (signedError || !signed?.signedUrl) throw new Error("تعذر إنشاء رابط المستند");
+    return { signedUrl: signed.signedUrl, expiresInSeconds: 300 };
   });

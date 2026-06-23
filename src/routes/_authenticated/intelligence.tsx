@@ -1,13 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Building2, Lightbulb, Search, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Building2, Lightbulb, Search, ShieldAlert, ShieldCheck, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { listCompanies, listRecommendations } from "@/lib/marketplace.functions";
+import {
+  dismissRecommendation,
+  listCompanies,
+  listRecommendations,
+} from "@/lib/marketplace.functions";
 import type { CompanyRow, RecommendationRow } from "@/lib/marketplace/types";
 
 export const Route = createFileRoute("/_authenticated/intelligence")({
@@ -108,6 +113,12 @@ function CompanyGrid({ companies }: { companies: CompanyRow[] }) {
 }
 
 function RecommendationPanel({ recommendations }: { recommendations: RecommendationRow[] }) {
+  const dismiss = useServerFn(dismissRecommendation);
+  const qc = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (id: string) => dismiss({ data: { id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["recommendations"] }),
+  });
   return (
     <Card className="p-5 space-y-4 h-fit">
       <div className="flex items-center gap-2">

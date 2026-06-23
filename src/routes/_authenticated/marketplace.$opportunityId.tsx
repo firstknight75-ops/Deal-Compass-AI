@@ -33,6 +33,7 @@ import {
   archiveSpecialOpportunity,
   getSpecialOpportunity,
   listSpecialOpportunityActivities,
+  createSpecialOpportunityDocumentSignedUrl,
   listSpecialOpportunityDocuments,
   registerSpecialOpportunityDocument,
   scoreSpecialOpportunity,
@@ -58,6 +59,7 @@ function OpportunityDetailPage() {
   const scoreWithAI = useServerFn(scoreSpecialOpportunity);
   const listDocuments = useServerFn(listSpecialOpportunityDocuments);
   const registerDocument = useServerFn(registerSpecialOpportunityDocument);
+  const createSignedUrl = useServerFn(createSpecialOpportunityDocumentSignedUrl);
   const qc = useQueryClient();
   const [comment, setComment] = useState("");
   const [editOpen, setEditOpen] = useState(false);
@@ -85,6 +87,14 @@ function OpportunityDetailPage() {
       qc.invalidateQueries({ queryKey: ["special-opportunity-activities", opportunityId] });
     },
     onError: () => toast.error("تعذر إضافة التعليق"),
+  });
+
+  const signedUrlMutation = useMutation({
+    mutationFn: (id: string) => createSignedUrl({ data: { id } }),
+    onSuccess: (data) => {
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذر فتح المستند"),
   });
 
   const uploadMutation = useMutation({
@@ -189,6 +199,8 @@ function OpportunityDetailPage() {
               documents={documents as OpportunityDocumentRow[]}
               isUploading={uploadMutation.isPending}
               onUpload={(file) => uploadMutation.mutate(file)}
+              onOpenDocument={(id) => signedUrlMutation.mutate(id)}
+              openingDocumentId={signedUrlMutation.variables}
             />
             <Timeline activities={activities as OpportunityActivityRow[]} />
           </div>
@@ -446,10 +458,14 @@ function DocumentsPanel({
   documents,
   isUploading,
   onUpload,
+  onOpenDocument,
+  openingDocumentId,
 }: {
   documents: OpportunityDocumentRow[];
   isUploading: boolean;
   onUpload: (file: File) => void;
+  onOpenDocument: (id: string) => void;
+  openingDocumentId?: string;
 }) {
   return (
     <Card className="p-5 space-y-4">

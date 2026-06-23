@@ -157,6 +157,26 @@ export interface RadarSourceRow {
   readonly updated_at: string;
 }
 
+export interface CompanyOpportunityEdgeRow {
+  readonly id: string;
+  readonly company_id: string;
+  readonly opportunity_kind: OpportunityKind;
+  readonly general_opportunity_id: string | null;
+  readonly special_opportunity_id: string | null;
+  readonly relationship: string;
+  readonly confidence_score: number;
+  readonly source: string;
+  readonly created_at: string;
+}
+
+export interface UserRoleRow {
+  readonly id: string;
+  readonly user_id: string;
+  readonly role: string;
+  readonly granted_at: string;
+  readonly revoked_at: string | null;
+}
+
 export interface MarketplaceDatabase {
   public: {
     Tables: {
