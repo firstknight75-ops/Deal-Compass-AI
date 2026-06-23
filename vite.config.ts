@@ -5,11 +5,29 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { createLogger } from "vite";
+
+const viteLogger = createLogger();
+const originalWarnOnce = viteLogger.warnOnce.bind(viteLogger);
+
+viteLogger.warnOnce = (message, options) => {
+  if (message.includes('The plugin "vite-tsconfig-paths" is detected')) return;
+  originalWarnOnce(message, options);
+};
 
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+  },
+  vite: {
+    customLogger: viteLogger,
+    build: {
+      // The TanStack/Lovable runtime bundle is intentionally shared. Keep the
+      // warning threshold above the current vendor/runtime chunk size so builds
+      // remain actionable and do not report expected framework chunking noise.
+      chunkSizeWarningLimit: 750,
+    },
   },
 });
