@@ -48,6 +48,15 @@ interface Props {
   defaultStage?: DealStage;
 }
 
+const STAGE_LABEL: Record<DealStage, string> = {
+  lead: "عميل محتمل",
+  qualified: "مؤهل",
+  proposal: "عرض",
+  negotiation: "تفاوض",
+  won: "فازت",
+  lost: "خسرت",
+};
+
 export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
   const qc = useQueryClient();
   const create = useServerFn(createDeal);
@@ -80,7 +89,17 @@ export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
         notes: deal.notes ?? "",
       });
     } else {
-      setForm((f) => ({ ...f, stage: defaultStage ?? "lead", name: "", company: "", value: "0", probability: "10", expected_close_date: "", owner: "", notes: "" }));
+      setForm((f) => ({
+        ...f,
+        stage: defaultStage ?? "lead",
+        name: "",
+        company: "",
+        value: "0",
+        probability: "10",
+        expected_close_date: "",
+        owner: "",
+        notes: "",
+      }));
     }
   }, [deal, defaultStage, open]);
 
@@ -102,26 +121,26 @@ export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["deals"] });
-      toast.success(deal ? "Deal updated" : "Deal created");
+      toast.success(deal ? "تم تحديث الصفقة" : "تم إنشاء الصفقة");
       onOpenChange(false);
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Save failed"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "فشل الحفظ"),
   });
 
   const del = useMutation({
     mutationFn: async () => deal && remove({ data: { id: deal.id } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["deals"] });
-      toast.success("Deal deleted");
+      toast.success("تم حذف الصفقة");
       onOpenChange(false);
     },
   });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" dir="rtl">
         <DialogHeader>
-          <DialogTitle>{deal ? "Edit deal" : "New deal"}</DialogTitle>
+          <DialogTitle>{deal ? "تعديل الصفقة" : "صفقة جديدة"}</DialogTitle>
         </DialogHeader>
         <form
           onSubmit={(e) => {
@@ -131,56 +150,110 @@ export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
           className="space-y-3"
         >
           <div className="space-y-1.5">
-            <Label htmlFor="name">Deal name</Label>
-            <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Label htmlFor="name">اسم الصفقة</Label>
+            <Input
+              id="name"
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="company">Company</Label>
-              <Input id="company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
+              <Label htmlFor="company">الشركة</Label>
+              <Input
+                id="company"
+                value={form.company}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="owner">Owner</Label>
-              <Input id="owner" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} />
+              <Label htmlFor="owner">المالك</Label>
+              <Input
+                id="owner"
+                value={form.owner}
+                onChange={(e) => setForm({ ...form, owner: e.target.value })}
+              />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label>Stage</Label>
-              <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v as DealStage })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label>المرحلة</Label>
+              <Select
+                value={form.stage}
+                onValueChange={(v) => setForm({ ...form, stage: v as DealStage })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {DEAL_STAGES.map((s) => (
-                    <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
+                  {DEAL_STAGES.map((stage) => (
+                    <SelectItem key={stage} value={stage}>
+                      {STAGE_LABEL[stage]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="value">Value</Label>
-              <Input id="value" type="number" min="0" step="0.01" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
+              <Label htmlFor="value">القيمة</Label>
+              <Input
+                id="value"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.value}
+                onChange={(e) => setForm({ ...form, value: e.target.value })}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="prob">Win % </Label>
-              <Input id="prob" type="number" min="0" max="100" value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} />
+              <Label htmlFor="prob">نسبة الفوز %</Label>
+              <Input
+                id="prob"
+                type="number"
+                min="0"
+                max="100"
+                value={form.probability}
+                onChange={(e) => setForm({ ...form, probability: e.target.value })}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="close">Expected close date</Label>
-            <Input id="close" type="date" value={form.expected_close_date} onChange={(e) => setForm({ ...form, expected_close_date: e.target.value })} />
+            <Label htmlFor="close">تاريخ الإغلاق المتوقع</Label>
+            <Input
+              id="close"
+              type="date"
+              value={form.expected_close_date}
+              onChange={(e) => setForm({ ...form, expected_close_date: e.target.value })}
+            />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+            <Label htmlFor="notes">ملاحظات</Label>
+            <Textarea
+              id="notes"
+              rows={3}
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             {deal && (
-              <Button type="button" variant="destructive" onClick={() => del.mutate()} disabled={del.isPending} className="mr-auto">
-                Delete
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => del.mutate()}
+                disabled={del.isPending}
+                className="ml-auto"
+              >
+                حذف
               </Button>
             )}
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save"}</Button>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? "جارٍ الحفظ…" : "حفظ"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

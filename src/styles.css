@@ -102,10 +102,19 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
     font-feature-settings: "cv11", "ss01";
+  }
+}
+
+@layer base {
+  html[dir="rtl"] {
+    direction: rtl;
   }
 }

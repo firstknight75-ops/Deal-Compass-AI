@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DealCompass AI+ — Navigate every deal with clarity" },
+      { title: "ديل كومباس AI+ — بوصلة كل صفقة بثقة" },
       {
         name: "description",
         content:
-          "Pipeline visibility, deal health scoring, and decision-grade analytics for modern revenue teams.",
+          "رؤية واضحة لمسار الصفقات، تقييم صحة الفرص، وتحليلات جاهزة للقرار لفرق الإيرادات الحديثة.",
       },
-      { property: "og:title", content: "DealCompass AI+" },
+      { property: "og:title", content: "ديل كومباس AI+" },
       {
         property: "og:description",
         content:
-          "Pipeline visibility, deal health scoring, and decision-grade analytics for modern revenue teams.",
+          "رؤية واضحة لمسار الصفقات، تقييم صحة الفرص، وتحليلات جاهزة للقرار لفرق الإيرادات الحديثة.",
       },
     ],
   }),
@@ -24,19 +24,19 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" dir="rtl">
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-semibold">
             <Compass className="h-5 w-5 text-accent" />
-            DealCompass <span className="text-accent">AI+</span>
+            ديل كومباس <span className="text-accent">AI+</span>
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">
-              <Link to="/auth">Sign in</Link>
+              <Link to="/auth">تسجيل الدخول</Link>
             </Button>
             <Button asChild size="sm">
-              <Link to="/auth">Get started</Link>
+              <Link to="/auth">ابدأ الآن</Link>
             </Button>
           </div>
         </div>
@@ -45,19 +45,19 @@ function Landing() {
       <section className="max-w-6xl mx-auto px-6 pt-24 pb-20 text-center space-y-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-          Built for revenue teams that ship
+          مصمم لفرق الإيرادات التي تتحرك بسرعة
         </div>
         <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight max-w-3xl mx-auto leading-[1.05]">
-          Navigate every deal with <span className="text-accent">clarity</span>.
+          وجّه كل صفقة <span className="text-accent">بوضوح</span>.
         </h1>
         <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-          Pipeline visibility, deal health scoring, and decision-grade analytics —
-          all in one workspace.
+          رؤية لمسار الصفقات، تقييم لصحة الفرص، وتحليلات جاهزة لاتخاذ القرار — كلها في مساحة عمل
+          واحدة.
         </p>
         <div className="flex items-center justify-center gap-3 pt-2">
           <Button asChild size="lg">
             <Link to="/auth">
-              Start free <ArrowRight className="ml-1.5 h-4 w-4" />
+              ابدأ مجاناً <ArrowRight className="mr-1.5 h-4 w-4 rotate-180" />
             </Link>
           </Button>
         </div>
@@ -66,23 +66,23 @@ function Landing() {
       <section className="max-w-6xl mx-auto px-6 pb-24 grid md:grid-cols-3 gap-6">
         <Feature
           icon={TrendingUp}
-          title="Live pipeline"
-          body="Drag, drop, and forecast in real time. Every stage, every dollar, accounted for."
+          title="مسار صفقات مباشر"
+          body="رتّب وتابع وتنبأ بالإيرادات في الوقت الفعلي. كل مرحلة وكل قيمة في مكانها."
         />
         <Feature
           icon={Target}
-          title="Weighted forecast"
-          body="Probability-adjusted revenue across active deals. No spreadsheets, no surprises."
+          title="توقعات موزونة"
+          body="إيرادات معدّلة حسب احتمالية الفوز عبر الصفقات النشطة — بدون جداول مشتتة أو مفاجآت."
         />
         <Feature
           icon={Shield}
-          title="Private by design"
-          body="Row-level security. Your deals are yours alone — never visible to other accounts."
+          title="خصوصية من الأساس"
+          body="أمان على مستوى الصفوف. صفقاتك تخصك وحدك ولا تظهر لأي حساب آخر."
         />
       </section>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        © DealCompass AI+
+        © ديل كومباس AI+
       </footer>
     </div>
   );

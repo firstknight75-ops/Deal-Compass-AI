@@ -17,12 +17,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2 font-semibold">
             <Compass className="h-5 w-5 text-accent" />
-            DealCompass <span className="text-accent">AI+</span>
+            ديل كومباس <span className="text-accent">AI+</span>
           </Link>
           <nav className="flex items-center gap-1 text-sm">
             <Link
@@ -30,11 +30,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               activeProps={{ className: "bg-secondary text-foreground" }}
               className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
             >
-              Pipeline
+              مسار الصفقات
             </Link>
-            <Button variant="ghost" size="sm" onClick={signOut} className="ml-2">
-              <LogOut className="h-4 w-4 mr-1.5" />
-              Sign out
+            <Button variant="ghost" size="sm" onClick={signOut} className="mr-2">
+              <LogOut className="h-4 w-4 ml-1.5" />
+              تسجيل الخروج
             </Button>
           </nav>
         </div>
