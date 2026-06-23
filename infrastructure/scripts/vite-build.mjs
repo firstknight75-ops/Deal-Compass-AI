@@ -1,8 +1,6 @@
 import { spawn } from "node:child_process";
 
-const filteredWarnings = [
-  'The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively',
-];
+const filteredWarnings = ["vite-tsconfig-paths"];
 
 function filterOutput(chunk) {
   const text = chunk.toString();
