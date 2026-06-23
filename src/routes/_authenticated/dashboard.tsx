@@ -190,11 +190,6 @@ function Dashboard() {
                               {fmtMoney(d.value_cents, d.currency)}
                             </span>
                             <div className="flex items-center gap-1">
-                              {typeof d.ai_health_score === "number" && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                  AI {Math.round(d.ai_health_score)}%
-                                </Badge>
-                              )}
                               <Badge
                                 variant="outline"
                                 className={`${STAGE_TONE[d.stage]} text-[10px] px-1.5 py-0`}
