@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Archive, ArrowRight, Edit, MessageSquare, ShieldCheck } from "lucide-react";
+import { Archive, ArrowRight, Edit, MessageSquare, ShieldCheck, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   archiveSpecialOpportunity,
   getSpecialOpportunity,
   listSpecialOpportunityActivities,
+  scoreSpecialOpportunity,
   updateSpecialOpportunity,
 } from "@/lib/marketplace.functions";
 import type { OpportunityActivityRow, SpecialOpportunityRow } from "@/lib/marketplace/types";
@@ -38,6 +39,7 @@ function OpportunityDetailPage() {
   const listActivities = useServerFn(listSpecialOpportunityActivities);
   const addComment = useServerFn(addSpecialOpportunityComment);
   const archive = useServerFn(archiveSpecialOpportunity);
+  const scoreWithAI = useServerFn(scoreSpecialOpportunity);
   const qc = useQueryClient();
   const [comment, setComment] = useState("");
   const [editOpen, setEditOpen] = useState(false);
@@ -60,6 +62,16 @@ function OpportunityDetailPage() {
       qc.invalidateQueries({ queryKey: ["special-opportunity-activities", opportunityId] });
     },
     onError: () => toast.error("تعذر إضافة التعليق"),
+  });
+
+  const scoreMutation = useMutation({
+    mutationFn: () => scoreWithAI({ data: { id: opportunityId } }),
+    onSuccess: () => {
+      toast.success("تم تحديث تقييم الذكاء الاصطناعي");
+      qc.invalidateQueries({ queryKey: ["special-opportunity", opportunityId] });
+      qc.invalidateQueries({ queryKey: ["special-opportunity-activities", opportunityId] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذر تقييم الفرصة"),
   });
 
   const archiveMutation = useMutation({
@@ -90,6 +102,8 @@ function OpportunityDetailPage() {
             opportunity={opportunity as SpecialOpportunityRow}
             onArchive={() => archiveMutation.mutate()}
             onEdit={() => setEditOpen(true)}
+            onScore={() => scoreMutation.mutate()}
+            isScoring={scoreMutation.isPending}
           />
         )}
 
@@ -132,10 +146,14 @@ function OpportunityHeader({
   opportunity,
   onArchive,
   onEdit,
+  onScore,
+  isScoring,
 }: {
   opportunity: SpecialOpportunityRow;
   onArchive: () => void;
   onEdit: () => void;
+  onScore: () => void;
+  isScoring: boolean;
 }) {
   return (
     <Card className="p-6 space-y-5">
@@ -179,6 +197,13 @@ function OpportunityHeader({
       <p className="leading-8 text-sm text-muted-foreground whitespace-pre-wrap">
         {opportunity.description_ar}
       </p>
+
+      {opportunity.ai_explainer_ar && (
+        <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm leading-7 whitespace-pre-wrap">
+          <div className="font-medium mb-1">شرح تقييم الذكاء الاصطناعي</div>
+          {opportunity.ai_explainer_ar}
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-3 gap-3 text-sm">
         <Info

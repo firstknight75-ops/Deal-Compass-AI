@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getServerEnv } from "@/lib/config";
+import { scoreSpecialOpportunityWithAI } from "@/lib/marketplace/ai-scoring";
 import {
   SPECIAL_OPPORTUNITY_TYPES,
   type GeneralOpportunityRow,
@@ -384,4 +385,59 @@ export const listGeneralOpportunityActivities = createServerFn({ method: "GET" }
 
     if (error) throw new Error("تعذر تحميل سجل الفرصة العامة");
     return (rows ?? []) as OpportunityActivityRow[];
+  });
+
+/**
+ * Generates and persists an AI health score and Arabic explainer for a special opportunity.
+ */
+export const scoreSpecialOpportunity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => idInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: opportunity, error: fetchError } = await supabase
+      .from("special_opportunities")
+      .select(
+        "id, owner_user_id, organization_id, type, status, title_ar, title_en, description_ar, description_en, category_id, country, city, price_amount, currency, quantity, unit, incoterm, ai_score, ai_explainer_ar, published_at, archived_at, deleted_at, created_at, updated_at",
+      )
+      .eq("id", data.id)
+      .eq("owner_user_id", context.userId)
+      .single();
+
+    if (fetchError) throw new Error("تعذر تحميل الفرصة قبل التقييم");
+
+    const result = await scoreSpecialOpportunityWithAI(opportunity as SpecialOpportunityRow);
+    const explainer = [
+      result.explainer_ar,
+      "",
+      "نقاط القوة:",
+      ...result.strengths_ar.map((item) => `- ${item}`),
+      "",
+      "المخاطر:",
+      ...result.risks_ar.map((item) => `- ${item}`),
+      "",
+      "الإجراءات المقترحة:",
+      ...result.next_actions_ar.map((item) => `- ${item}`),
+    ].join("\n");
+
+    const { data: row, error: updateError } = await supabase
+      .from("special_opportunities")
+      .update({ ai_score: result.score, ai_explainer_ar: explainer })
+      .eq("id", data.id)
+      .eq("owner_user_id", context.userId)
+      .select()
+      .single();
+
+    if (updateError) throw new Error("تعذر حفظ تقييم الذكاء الاصطناعي");
+
+    await supabase.from("opportunity_activities").insert({
+      opportunity_kind: "special",
+      special_opportunity_id: data.id,
+      actor_user_id: context.userId,
+      activity_type: "ai_score_updated",
+      body_ar: `تم تحديث تقييم الذكاء الاصطناعي إلى ${result.score}%.`,
+      metadata: { score: result.score },
+    });
+
+    return row as SpecialOpportunityRow;
   });
