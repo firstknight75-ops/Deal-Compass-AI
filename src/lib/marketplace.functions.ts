@@ -105,7 +105,7 @@ export const listTradeCategories = createServerFn({ method: "GET" }).handler(asy
  * Lists published external general opportunities. These are read-only market-intelligence leads.
  */
 export const listGeneralOpportunities = createServerFn({ method: "GET" })
-  .validator((input: unknown) => marketplaceFilterSchema.parse(input ?? {}))
+  .inputValidator((input: unknown) => marketplaceFilterSchema.parse(input ?? {}))
   .handler(async ({ data }) => {
     const supabase = getPublicMarketplaceClient();
     let query = supabase
@@ -130,7 +130,7 @@ export const listGeneralOpportunities = createServerFn({ method: "GET" })
  * Lists published user-owned special marketplace opportunities.
  */
 export const listSpecialOpportunities = createServerFn({ method: "GET" })
-  .validator((input: unknown) => marketplaceFilterSchema.parse(input ?? {}))
+  .inputValidator((input: unknown) => marketplaceFilterSchema.parse(input ?? {}))
   .handler(async ({ data }) => {
     const supabase = getPublicMarketplaceClient();
     let query = supabase
@@ -157,7 +157,7 @@ export const listSpecialOpportunities = createServerFn({ method: "GET" })
  */
 export const createSpecialOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => specialOpportunityInput.parse(input))
+  .inputValidator((input: unknown) => specialOpportunityInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const now = new Date().toISOString();
@@ -202,7 +202,7 @@ export const createSpecialOpportunity = createServerFn({ method: "POST" })
  */
 export const saveGeneralOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { error } = await supabase
@@ -218,7 +218,7 @@ export const saveGeneralOpportunity = createServerFn({ method: "POST" })
  */
 export const favoriteSpecialOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { error } = await supabase
@@ -234,7 +234,7 @@ export const favoriteSpecialOpportunity = createServerFn({ method: "POST" })
  */
 export const getSpecialOpportunity = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: row, error } = await supabase
@@ -254,7 +254,7 @@ export const getSpecialOpportunity = createServerFn({ method: "GET" })
  */
 export const updateSpecialOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => specialUpdateInput.parse(input))
+  .inputValidator((input: unknown) => specialUpdateInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { id, ...patch } = data;
@@ -284,7 +284,7 @@ export const updateSpecialOpportunity = createServerFn({ method: "POST" })
  */
 export const archiveSpecialOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { error } = await supabase
@@ -311,7 +311,7 @@ export const archiveSpecialOpportunity = createServerFn({ method: "POST" })
  */
 export const listSpecialOpportunityActivities = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: rows, error } = await supabase
@@ -333,7 +333,7 @@ export const listSpecialOpportunityActivities = createServerFn({ method: "GET" }
  */
 export const addSpecialOpportunityComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => commentInput.parse(input))
+  .inputValidator((input: unknown) => commentInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: row, error } = await supabase
@@ -356,7 +356,7 @@ export const addSpecialOpportunityComment = createServerFn({ method: "POST" })
  * Fetches a single published general opportunity. General opportunities are external read-only leads.
  */
 export const getGeneralOpportunity = createServerFn({ method: "GET" })
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data }) => {
     const supabase = getPublicMarketplaceClient();
     const { data: row, error } = await supabase
@@ -376,7 +376,7 @@ export const getGeneralOpportunity = createServerFn({ method: "GET" })
  * Lists public activity records attached to a general opportunity.
  */
 export const listGeneralOpportunityActivities = createServerFn({ method: "GET" })
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data }) => {
     const supabase = getPublicMarketplaceClient();
     const { data: rows, error } = await supabase
@@ -398,7 +398,7 @@ export const listGeneralOpportunityActivities = createServerFn({ method: "GET" }
  */
 export const scoreSpecialOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: opportunity, error: fetchError } = await supabase
@@ -468,7 +468,7 @@ const companyFilterSchema = z.object({
  */
 export const registerSpecialOpportunityDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => documentInput.parse(input))
+  .inputValidator((input: unknown) => documentInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: row, error } = await supabase
@@ -505,7 +505,7 @@ export const registerSpecialOpportunityDocument = createServerFn({ method: "POST
  */
 export const listSpecialOpportunityDocuments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: rows, error } = await supabase
@@ -527,7 +527,7 @@ export const listSpecialOpportunityDocuments = createServerFn({ method: "GET" })
  * Lists company intelligence profiles visible through public RLS policies.
  */
 export const listCompanies = createServerFn({ method: "GET" })
-  .validator((input: unknown) => companyFilterSchema.parse(input ?? {}))
+  .inputValidator((input: unknown) => companyFilterSchema.parse(input ?? {}))
   .handler(async ({ data }) => {
     const supabase = getPublicMarketplaceClient();
     let query = supabase
@@ -572,7 +572,7 @@ export const listRecommendations = createServerFn({ method: "GET" })
  * Fetches a single company intelligence profile visible through public RLS policies.
  */
 export const getCompany = createServerFn({ method: "GET" })
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data }) => {
     const supabase = getPublicMarketplaceClient();
     const { data: row, error } = await supabase
@@ -593,7 +593,7 @@ export const getCompany = createServerFn({ method: "GET" })
  */
 export const dismissRecommendation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { error } = await supabase
@@ -667,7 +667,7 @@ export const listMyRoles = createServerFn({ method: "GET" })
  */
 export const createRadarSource = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => radarSourceInput.parse(input))
+  .inputValidator((input: unknown) => radarSourceInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: row, error } = await supabase
@@ -685,7 +685,7 @@ export const createRadarSource = createServerFn({ method: "POST" })
  */
 export const updateRadarSource = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => radarSourceUpdateInput.parse(input))
+  .inputValidator((input: unknown) => radarSourceUpdateInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { id, ...patch } = data;
@@ -704,7 +704,7 @@ export const updateRadarSource = createServerFn({ method: "POST" })
  * Lists Knowledge Graph edges connecting a company to opportunities.
  */
 export const listCompanyOpportunityEdges = createServerFn({ method: "GET" })
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data }) => {
     const supabase = getPublicMarketplaceClient();
     const { data: rows, error } = await supabase
@@ -725,7 +725,7 @@ export const listCompanyOpportunityEdges = createServerFn({ method: "GET" })
  */
 export const createSpecialOpportunityDocumentSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asMarketplaceClient(context.supabase);
     const { data: document, error: documentError } = await supabase

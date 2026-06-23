@@ -51,7 +51,7 @@ export const listDeals = createServerFn({ method: "GET" })
 
 export const createDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => dealInput.parse(d))
+  .inputValidator((d: unknown) => dealInput.parse(d))
   .handler(async ({ data, context }) => {
     const supabase = asDealClient(context.supabase);
     const { data: row, error } = await supabase
@@ -65,7 +65,7 @@ export const createDeal = createServerFn({ method: "POST" })
 
 export const updateDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) =>
+  .inputValidator((d: unknown) =>
     z.object({ id: z.string().uuid(), patch: dealInput.partial() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -82,7 +82,7 @@ export const updateDeal = createServerFn({ method: "POST" })
 
 export const deleteDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabase = asDealClient(context.supabase);
     const { error } = await supabase.from("deals").delete().eq("id", data.id);
@@ -92,7 +92,7 @@ export const deleteDeal = createServerFn({ method: "POST" })
 
 export const scoreDealHealth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asDealClient(context.supabase);
     const { data: deal, error: fetchError } = await supabase
@@ -133,7 +133,7 @@ export const scoreDealHealth = createServerFn({ method: "POST" })
 
 export const registerDealDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => dealDocumentInput.parse(input))
+  .inputValidator((input: unknown) => dealDocumentInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asDealClient(context.supabase);
     const { data: row, error } = await supabase
@@ -157,7 +157,7 @@ export const registerDealDocument = createServerFn({ method: "POST" })
 
 export const listDealDocuments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asDealClient(context.supabase);
     const { data: rows, error } = await supabase
@@ -177,7 +177,7 @@ export const listDealDocuments = createServerFn({ method: "GET" })
 
 export const createDealDocumentSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => idInput.parse(input))
+  .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = asDealClient(context.supabase);
     const { data: document, error: documentError } = await supabase
