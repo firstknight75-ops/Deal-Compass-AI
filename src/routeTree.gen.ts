@@ -13,10 +13,12 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AuthenticatedRadarRouteImport } from './routes/_authenticated/radar'
 import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated/marketplace'
 import { Route as AuthenticatedIntelligenceRouteImport } from './routes/_authenticated/intelligence'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMarketplaceOpportunityIdRouteImport } from './routes/_authenticated/marketplace.$opportunityId'
+import { Route as AuthenticatedIntelligenceCompanyIdRouteImport } from './routes/_authenticated/intelligence.$companyId'
 import { Route as AuthenticatedMarketplaceGeneralOpportunityIdRouteImport } from './routes/_authenticated/marketplace.general.$opportunityId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -37,6 +39,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRadarRoute = AuthenticatedRadarRouteImport.update({
+  id: '/radar',
+  path: '/radar',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMarketplaceRoute =
   AuthenticatedMarketplaceRouteImport.update({
@@ -61,6 +68,12 @@ const AuthenticatedMarketplaceOpportunityIdRoute =
     path: '/$opportunityId',
     getParentRoute: () => AuthenticatedMarketplaceRoute,
   } as any)
+const AuthenticatedIntelligenceCompanyIdRoute =
+  AuthenticatedIntelligenceCompanyIdRouteImport.update({
+    id: '/$companyId',
+    path: '/$companyId',
+    getParentRoute: () => AuthenticatedIntelligenceRoute,
+  } as any)
 const AuthenticatedMarketplaceGeneralOpportunityIdRoute =
   AuthenticatedMarketplaceGeneralOpportunityIdRouteImport.update({
     id: '/general/$opportunityId',
@@ -72,9 +85,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
+  '/radar': typeof AuthenticatedRadarRoute
   '/api/health': typeof ApiHealthRoute
+  '/intelligence/$companyId': typeof AuthenticatedIntelligenceCompanyIdRoute
   '/marketplace/$opportunityId': typeof AuthenticatedMarketplaceOpportunityIdRoute
   '/marketplace/general/$opportunityId': typeof AuthenticatedMarketplaceGeneralOpportunityIdRoute
 }
@@ -82,9 +97,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
+  '/radar': typeof AuthenticatedRadarRoute
   '/api/health': typeof ApiHealthRoute
+  '/intelligence/$companyId': typeof AuthenticatedIntelligenceCompanyIdRoute
   '/marketplace/$opportunityId': typeof AuthenticatedMarketplaceOpportunityIdRoute
   '/marketplace/general/$opportunityId': typeof AuthenticatedMarketplaceGeneralOpportunityIdRoute
 }
@@ -94,9 +111,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRoute
+  '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
+  '/_authenticated/radar': typeof AuthenticatedRadarRoute
   '/api/health': typeof ApiHealthRoute
+  '/_authenticated/intelligence/$companyId': typeof AuthenticatedIntelligenceCompanyIdRoute
   '/_authenticated/marketplace/$opportunityId': typeof AuthenticatedMarketplaceOpportunityIdRoute
   '/_authenticated/marketplace/general/$opportunityId': typeof AuthenticatedMarketplaceGeneralOpportunityIdRoute
 }
@@ -108,7 +127,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/intelligence'
     | '/marketplace'
+    | '/radar'
     | '/api/health'
+    | '/intelligence/$companyId'
     | '/marketplace/$opportunityId'
     | '/marketplace/general/$opportunityId'
   fileRoutesByTo: FileRoutesByTo
@@ -118,7 +139,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/intelligence'
     | '/marketplace'
+    | '/radar'
     | '/api/health'
+    | '/intelligence/$companyId'
     | '/marketplace/$opportunityId'
     | '/marketplace/general/$opportunityId'
   id:
@@ -129,7 +152,9 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/intelligence'
     | '/_authenticated/marketplace'
+    | '/_authenticated/radar'
     | '/api/health'
+    | '/_authenticated/intelligence/$companyId'
     | '/_authenticated/marketplace/$opportunityId'
     | '/_authenticated/marketplace/general/$opportunityId'
   fileRoutesById: FileRoutesById
@@ -171,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/radar': {
+      id: '/_authenticated/radar'
+      path: '/radar'
+      fullPath: '/radar'
+      preLoaderRoute: typeof AuthenticatedRadarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/marketplace': {
       id: '/_authenticated/marketplace'
       path: '/marketplace'
@@ -199,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMarketplaceOpportunityIdRouteImport
       parentRoute: typeof AuthenticatedMarketplaceRoute
     }
+    '/_authenticated/intelligence/$companyId': {
+      id: '/_authenticated/intelligence/$companyId'
+      path: '/$companyId'
+      fullPath: '/intelligence/$companyId'
+      preLoaderRoute: typeof AuthenticatedIntelligenceCompanyIdRouteImport
+      parentRoute: typeof AuthenticatedIntelligenceRoute
+    }
     '/_authenticated/marketplace/general/$opportunityId': {
       id: '/_authenticated/marketplace/general/$opportunityId'
       path: '/general/$opportunityId'
@@ -208,6 +247,21 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedIntelligenceRouteChildren {
+  AuthenticatedIntelligenceCompanyIdRoute: typeof AuthenticatedIntelligenceCompanyIdRoute
+}
+
+const AuthenticatedIntelligenceRouteChildren: AuthenticatedIntelligenceRouteChildren =
+  {
+    AuthenticatedIntelligenceCompanyIdRoute:
+      AuthenticatedIntelligenceCompanyIdRoute,
+  }
+
+const AuthenticatedIntelligenceRouteWithChildren =
+  AuthenticatedIntelligenceRoute._addFileChildren(
+    AuthenticatedIntelligenceRouteChildren,
+  )
 
 interface AuthenticatedMarketplaceRouteChildren {
   AuthenticatedMarketplaceOpportunityIdRoute: typeof AuthenticatedMarketplaceOpportunityIdRoute
@@ -229,14 +283,16 @@ const AuthenticatedMarketplaceRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRoute
+  AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRouteWithChildren
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRouteWithChildren
+  AuthenticatedRadarRoute: typeof AuthenticatedRadarRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRoute,
+  AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRouteWithChildren,
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRouteWithChildren,
+  AuthenticatedRadarRoute: AuthenticatedRadarRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

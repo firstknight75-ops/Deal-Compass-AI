@@ -144,6 +144,19 @@ export interface RecommendationRow {
   readonly created_at: string;
 }
 
+export interface RadarSourceRow {
+  readonly id: string;
+  readonly name: string;
+  readonly source_type: string;
+  readonly base_url: string | null;
+  readonly country: string | null;
+  readonly language: string;
+  readonly is_active: boolean;
+  readonly last_checked_at: string | null;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
 export interface MarketplaceDatabase {
   public: {
     Tables: {

@@ -11,6 +11,7 @@ import {
   type CompanyRow,
   type OpportunityActivityRow,
   type OpportunityDocumentRow,
+  type RadarSourceRow,
   type RecommendationRow,
   type SpecialOpportunityRow,
   type TradeCategoryRow,
@@ -563,4 +564,61 @@ export const listRecommendations = createServerFn({ method: "GET" })
 
     if (error) throw new Error("تعذر تحميل التوصيات");
     return (rows ?? []) as RecommendationRow[];
+  });
+
+/**
+ * Fetches a single company intelligence profile visible through public RLS policies.
+ */
+export const getCompany = createServerFn({ method: "GET" })
+  .validator((input: unknown) => idInput.parse(input))
+  .handler(async ({ data }) => {
+    const supabase = getPublicMarketplaceClient();
+    const { data: row, error } = await supabase
+      .from("companies")
+      .select(
+        "id, name, name_ar, country, city, website_url, industry, description_ar, trust_score, risk_score, created_at, updated_at",
+      )
+      .eq("id", data.id)
+      .is("deleted_at", null)
+      .single();
+
+    if (error) throw new Error("تعذر تحميل ملف الشركة");
+    return row as CompanyRow;
+  });
+
+/**
+ * Dismisses a recommendation for the authenticated user.
+ */
+export const dismissRecommendation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => idInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { error } = await supabase
+      .from("recommendations")
+      .update({ dismissed_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("user_id", context.userId);
+
+    if (error) throw new Error("تعذر إخفاء التوصية");
+    return { ok: true };
+  });
+
+/**
+ * Lists configured Opportunity Radar sources. Ingestion workers are intentionally not implemented yet.
+ */
+export const listRadarSources = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: rows, error } = await supabase
+      .from("radar_sources")
+      .select(
+        "id, name, source_type, base_url, country, language, is_active, last_checked_at, created_at, updated_at",
+      )
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) throw new Error("تعذر تحميل مصادر الرادار");
+    return (rows ?? []) as RadarSourceRow[];
   });
