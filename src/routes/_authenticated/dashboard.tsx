@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, TrendingUp, Target, DollarSign, Briefcase } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -8,7 +8,7 @@ import { DealDialog, type DealRow } from "@/components/DealDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { listDeals, DEAL_STAGES, type DealStage } from "@/lib/deals.functions";
+import { listDeals, updateDeal, DEAL_STAGES, type DealStage } from "@/lib/deals.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "مسار الصفقات — ديل كومباس AI+" }] }),
@@ -45,7 +45,9 @@ function fmtMoney(cents: number, currency = "USD") {
 }
 
 function Dashboard() {
+  const qc = useQueryClient();
   const list = useServerFn(listDeals);
+  const update = useServerFn(updateDeal);
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["deals"],
     queryFn: () => list(),
@@ -54,6 +56,13 @@ function Dashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<DealRow | null>(null);
   const [defaultStage, setDefaultStage] = useState<DealStage>("lead");
+  const [draggingDealId, setDraggingDealId] = useState<string | null>(null);
+
+  const moveDeal = useMutation({
+    mutationFn: ({ id, stage }: { id: string; stage: DealStage }) =>
+      update({ data: { id, patch: { stage } } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["deals"] }),
+  });
 
   const byStage = useMemo(() => {
     const m: Record<DealStage, DealRow[]> = {
@@ -122,7 +131,17 @@ function Dashboard() {
               const items = byStage[stage];
               const total = items.reduce((s, d) => s + d.value_cents, 0);
               return (
-                <div key={stage} className="flex flex-col min-w-0">
+                <div
+                  key={stage}
+                  className="flex flex-col min-w-0"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const dealId = event.dataTransfer.getData("text/deal-id") || draggingDealId;
+                    if (dealId) moveDeal.mutate({ id: dealId, stage });
+                    setDraggingDealId(null);
+                  }}
+                >
                   <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 rounded-full bg-[color:var(--stage-${stage})]`} />
@@ -150,8 +169,15 @@ function Dashboard() {
                       items.map((d) => (
                         <Card
                           key={d.id}
+                          draggable
+                          onDragStart={(event) => {
+                            setDraggingDealId(d.id);
+                            event.dataTransfer.setData("text/deal-id", d.id);
+                            event.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragEnd={() => setDraggingDealId(null)}
                           onClick={() => openEdit(d)}
-                          className="p-3 cursor-pointer hover:border-accent/50 hover:shadow-sm transition-all space-y-2"
+                          className={`p-3 cursor-grab active:cursor-grabbing hover:border-accent/50 hover:shadow-sm transition-all space-y-2 ${draggingDealId === d.id ? "opacity-50" : ""}`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="font-medium text-sm leading-tight">{d.name}</div>
@@ -163,12 +189,19 @@ function Dashboard() {
                             <span className="text-sm font-semibold tabular-nums">
                               {fmtMoney(d.value_cents, d.currency)}
                             </span>
-                            <Badge
-                              variant="outline"
-                              className={`${STAGE_TONE[d.stage]} text-[10px] px-1.5 py-0`}
-                            >
-                              {d.probability}%
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                              {typeof d.ai_health_score === "number" && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  AI {Math.round(d.ai_health_score)}%
+                                </Badge>
+                              )}
+                              <Badge
+                                variant="outline"
+                                className={`${STAGE_TONE[d.stage]} text-[10px] px-1.5 py-0`}
+                              >
+                                {d.probability}%
+                              </Badge>
+                            </div>
                           </div>
                           {d.expected_close_date && (
                             <div className="text-[11px] text-muted-foreground">

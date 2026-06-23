@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Dialog,
@@ -23,10 +23,16 @@ import {
   createDeal,
   updateDeal,
   deleteDeal,
+  scoreDealHealth,
+  registerDealDocument,
+  listDealDocuments,
+  createDealDocumentSignedUrl,
   DEAL_STAGES,
   type DealStage,
 } from "@/lib/deals.functions";
+import type { DealDocumentRow } from "@/lib/deals/types";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface DealRow {
   id: string;
@@ -39,6 +45,9 @@ export interface DealRow {
   expected_close_date: string | null;
   owner: string | null;
   notes: string | null;
+  ai_health_score?: number | null;
+  ai_health_explainer_ar?: string | null;
+  ai_health_scored_at?: string | null;
 }
 
 interface Props {
@@ -62,6 +71,10 @@ export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
   const create = useServerFn(createDeal);
   const update = useServerFn(updateDeal);
   const remove = useServerFn(deleteDeal);
+  const score = useServerFn(scoreDealHealth);
+  const registerDocument = useServerFn(registerDealDocument);
+  const listDocuments = useServerFn(listDealDocuments);
+  const createSignedUrl = useServerFn(createDealDocumentSignedUrl);
 
   const [form, setForm] = useState({
     name: "",
@@ -102,6 +115,62 @@ export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
       }));
     }
   }, [deal, defaultStage, open]);
+
+  const { data: documents = [] } = useQuery({
+    queryKey: ["deal-documents", deal?.id],
+    queryFn: () => listDocuments({ data: { id: deal!.id } }),
+    enabled: open && Boolean(deal?.id),
+  });
+
+  const scoreMutation = useMutation({
+    mutationFn: async () => {
+      if (!deal) throw new Error("يجب حفظ الصفقة قبل تقييمها");
+      return score({ data: { id: deal.id } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      toast.success("تم تحديث تقييم الصفقة");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذر تقييم الصفقة"),
+  });
+
+  const signedUrlMutation = useMutation({
+    mutationFn: (id: string) => createSignedUrl({ data: { id } }),
+    onSuccess: (data) => window.open(data.signedUrl, "_blank", "noopener,noreferrer"),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذر فتح المستند"),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!deal) throw new Error("يجب حفظ الصفقة قبل رفع المستندات");
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) throw new Error("يجب تسجيل الدخول لرفع المستندات");
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const storagePath = `${userData.user.id}/deals/${deal.id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("trade-documents")
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+      return registerDocument({
+        data: {
+          dealId: deal.id,
+          storage_path: storagePath,
+          file_name: file.name,
+          mime_type: file.type || "application/octet-stream",
+          file_size_bytes: file.size,
+          title_ar: file.name,
+        },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deal-documents", deal?.id] });
+      toast.success("تم رفع مستند الصفقة");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذر رفع المستند"),
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -236,6 +305,45 @@ export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </div>
+
+          {deal && (
+            <div className="rounded-lg border border-border p-3 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium">تقييم صحة الصفقة بالذكاء الاصطناعي</div>
+                  <div className="text-xs text-muted-foreground">
+                    {typeof deal.ai_health_score === "number"
+                      ? `آخر تقييم: ${Math.round(deal.ai_health_score)}%`
+                      : "لم يتم تقييم الصفقة بعد"}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => scoreMutation.mutate()}
+                  disabled={scoreMutation.isPending}
+                >
+                  {scoreMutation.isPending ? "جارٍ التقييم…" : "تقييم AI"}
+                </Button>
+              </div>
+              {deal.ai_health_explainer_ar && (
+                <div className="text-xs leading-6 text-muted-foreground whitespace-pre-wrap rounded-md bg-muted/40 p-2">
+                  {deal.ai_health_explainer_ar}
+                </div>
+              )}
+            </div>
+          )}
+
+          {deal && (
+            <DealDocumentsPanel
+              documents={documents as DealDocumentRow[]}
+              isUploading={uploadMutation.isPending}
+              openingDocumentId={signedUrlMutation.variables}
+              onUpload={(file) => uploadMutation.mutate(file)}
+              onOpenDocument={(id) => signedUrlMutation.mutate(id)}
+            />
+          )}
           <DialogFooter className="gap-2 sm:gap-2">
             {deal && (
               <Button
@@ -258,5 +366,72 @@ export function DealDialog({ open, onOpenChange, deal, defaultStage }: Props) {
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function DealDocumentsPanel({
+  documents,
+  isUploading,
+  openingDocumentId,
+  onUpload,
+  onOpenDocument,
+}: {
+  documents: DealDocumentRow[];
+  isUploading: boolean;
+  openingDocumentId?: string;
+  onUpload: (file: File) => void;
+  onOpenDocument: (id: string) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-border p-3 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-medium">مستندات الصفقة</div>
+        <label className="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors">
+          {isUploading ? "جارٍ الرفع…" : "رفع مستند"}
+          <input
+            type="file"
+            className="hidden"
+            accept="application/pdf,image/jpeg,image/png,image/webp,.docx,.xlsx"
+            disabled={isUploading}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onUpload(file);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      {documents.length === 0 ? (
+        <div className="text-xs text-muted-foreground">لا توجد مستندات مرفوعة لهذه الصفقة.</div>
+      ) : (
+        <div className="space-y-2">
+          {documents.map((document) => (
+            <div
+              key={document.id}
+              className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-xs"
+            >
+              <div className="min-w-0">
+                <div className="font-medium truncate">
+                  {document.title_ar ?? document.file_name}
+                </div>
+                <div className="text-muted-foreground">
+                  {(document.file_size_bytes / 1024 / 1024).toFixed(2)} MB •{" "}
+                  {new Date(document.created_at).toLocaleDateString("ar-IQ")}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenDocument(document.id)}
+                disabled={openingDocumentId === document.id}
+              >
+                {openingDocumentId === document.id ? "فتح…" : "فتح"}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
