@@ -32,27 +32,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               مسار الصفقات
             </Link>
-            <Link
-              to="/marketplace"
-              activeProps={{ className: "bg-secondary text-foreground" }}
-              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-            >
-              السوق الذكي
-            </Link>
-            <Link
-              to="/intelligence"
-              activeProps={{ className: "bg-secondary text-foreground" }}
-              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-            >
-              الاستخبارات
-            </Link>
-            <Link
-              to="/radar"
-              activeProps={{ className: "bg-secondary text-foreground" }}
-              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-            >
-              الرادار
-            </Link>
+
+
             <Button variant="ghost" size="sm" onClick={signOut} className="mr-2">
               <LogOut className="h-4 w-4 ml-1.5" />
               تسجيل الخروج
