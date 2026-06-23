@@ -8,7 +8,10 @@ import {
   SPECIAL_OPPORTUNITY_TYPES,
   type GeneralOpportunityRow,
   type MarketplaceDatabase,
+  type CompanyRow,
   type OpportunityActivityRow,
+  type OpportunityDocumentRow,
+  type RecommendationRow,
   type SpecialOpportunityRow,
   type TradeCategoryRow,
 } from "@/lib/marketplace/types";
@@ -440,4 +443,124 @@ export const scoreSpecialOpportunity = createServerFn({ method: "POST" })
     });
 
     return row as SpecialOpportunityRow;
+  });
+
+const documentInput = z.object({
+  opportunityId: z.string().uuid(),
+  storage_path: z.string().min(3).max(600),
+  file_name: z.string().min(1).max(255),
+  mime_type: z.string().min(3).max(160),
+  file_size_bytes: z.number().int().positive().max(26_214_400),
+  title_ar: z.string().max(220).optional().nullable(),
+});
+
+const companyFilterSchema = z.object({
+  query: z.string().max(120).optional(),
+  country: z.string().max(80).optional(),
+  limit: z.number().int().min(1).max(50).default(24),
+});
+
+/**
+ * Registers metadata after a client uploads a special opportunity document to Supabase Storage.
+ */
+export const registerSpecialOpportunityDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => documentInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: row, error } = await supabase
+      .from("opportunity_documents")
+      .insert({
+        opportunity_kind: "special",
+        special_opportunity_id: data.opportunityId,
+        uploaded_by: context.userId,
+        bucket_id: "trade-documents",
+        storage_path: data.storage_path,
+        file_name: data.file_name,
+        mime_type: data.mime_type,
+        file_size_bytes: data.file_size_bytes,
+        title_ar: data.title_ar,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error("تعذر تسجيل المستند");
+
+    await supabase.from("opportunity_activities").insert({
+      opportunity_kind: "special",
+      special_opportunity_id: data.opportunityId,
+      actor_user_id: context.userId,
+      activity_type: "document_uploaded",
+      body_ar: `تم رفع المستند: ${data.file_name}`,
+    });
+
+    return row as OpportunityDocumentRow;
+  });
+
+/**
+ * Lists recent documents for a special opportunity owned by the authenticated user.
+ */
+export const listSpecialOpportunityDocuments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => idInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: rows, error } = await supabase
+      .from("opportunity_documents")
+      .select(
+        "id, opportunity_kind, general_opportunity_id, special_opportunity_id, uploaded_by, bucket_id, storage_path, file_name, mime_type, file_size_bytes, document_type, title_ar, created_at, deleted_at",
+      )
+      .eq("opportunity_kind", "special")
+      .eq("special_opportunity_id", data.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) throw new Error("تعذر تحميل المستندات");
+    return (rows ?? []) as OpportunityDocumentRow[];
+  });
+
+/**
+ * Lists company intelligence profiles visible through public RLS policies.
+ */
+export const listCompanies = createServerFn({ method: "GET" })
+  .validator((input: unknown) => companyFilterSchema.parse(input ?? {}))
+  .handler(async ({ data }) => {
+    const supabase = getPublicMarketplaceClient();
+    let query = supabase
+      .from("companies")
+      .select(
+        "id, name, name_ar, country, city, website_url, industry, description_ar, trust_score, risk_score, created_at, updated_at",
+      )
+      .is("deleted_at", null)
+      .order("trust_score", { ascending: false })
+      .limit(data.limit);
+
+    if (data.country) query = query.eq("country", data.country);
+    if (data.query) query = query.textSearch("search_vector", data.query, { type: "websearch" });
+
+    const { data: rows, error } = await query;
+    if (error) throw new Error("تعذر تحميل الشركات");
+    return (rows ?? []) as CompanyRow[];
+  });
+
+/**
+ * Lists personalized recommendations for the authenticated user.
+ */
+export const listRecommendations = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabase = asMarketplaceClient(context.supabase);
+    const { data: rows, error } = await supabase
+      .from("recommendations")
+      .select(
+        "id, target_kind, general_opportunity_id, special_opportunity_id, company_id, score, reason_ar, recommendation_type, created_at",
+      )
+      .eq("user_id", context.userId)
+      .is("dismissed_at", null)
+      .order("score", { ascending: false })
+      .limit(20);
+
+    if (error) throw new Error("تعذر تحميل التوصيات");
+    return (rows ?? []) as RecommendationRow[];
   });

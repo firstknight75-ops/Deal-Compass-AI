@@ -2,7 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Archive, ArrowRight, Edit, MessageSquare, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  Archive,
+  ArrowRight,
+  Edit,
+  FileText,
+  MessageSquare,
+  ShieldCheck,
+  Sparkles,
+  Upload,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,15 +27,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   addSpecialOpportunityComment,
   archiveSpecialOpportunity,
   getSpecialOpportunity,
   listSpecialOpportunityActivities,
+  listSpecialOpportunityDocuments,
+  registerSpecialOpportunityDocument,
   scoreSpecialOpportunity,
   updateSpecialOpportunity,
 } from "@/lib/marketplace.functions";
-import type { OpportunityActivityRow, SpecialOpportunityRow } from "@/lib/marketplace/types";
+import type {
+  OpportunityActivityRow,
+  OpportunityDocumentRow,
+  SpecialOpportunityRow,
+} from "@/lib/marketplace/types";
 
 export const Route = createFileRoute("/_authenticated/marketplace/$opportunityId")({
   head: () => ({ meta: [{ title: "تفاصيل الفرصة — ديل كومباس AI+" }] }),
@@ -40,6 +56,8 @@ function OpportunityDetailPage() {
   const addComment = useServerFn(addSpecialOpportunityComment);
   const archive = useServerFn(archiveSpecialOpportunity);
   const scoreWithAI = useServerFn(scoreSpecialOpportunity);
+  const listDocuments = useServerFn(listSpecialOpportunityDocuments);
+  const registerDocument = useServerFn(registerSpecialOpportunityDocument);
   const qc = useQueryClient();
   const [comment, setComment] = useState("");
   const [editOpen, setEditOpen] = useState(false);
@@ -54,6 +72,11 @@ function OpportunityDetailPage() {
     queryFn: () => listActivities({ data: { id: opportunityId } }),
   });
 
+  const { data: documents = [] } = useQuery({
+    queryKey: ["special-opportunity-documents", opportunityId],
+    queryFn: () => listDocuments({ data: { id: opportunityId } }),
+  });
+
   const commentMutation = useMutation({
     mutationFn: () => addComment({ data: { opportunityId, body_ar: comment } }),
     onSuccess: () => {
@@ -62,6 +85,40 @@ function OpportunityDetailPage() {
       qc.invalidateQueries({ queryKey: ["special-opportunity-activities", opportunityId] });
     },
     onError: () => toast.error("تعذر إضافة التعليق"),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) throw new Error("يجب تسجيل الدخول لرفع المستندات");
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const storagePath = `${userData.user.id}/${opportunityId}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("trade-documents")
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+
+      return registerDocument({
+        data: {
+          opportunityId,
+          storage_path: storagePath,
+          file_name: file.name,
+          mime_type: file.type || "application/octet-stream",
+          file_size_bytes: file.size,
+          title_ar: file.name,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("تم رفع المستند");
+      qc.invalidateQueries({ queryKey: ["special-opportunity-documents", opportunityId] });
+      qc.invalidateQueries({ queryKey: ["special-opportunity-activities", opportunityId] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "تعذر رفع المستند"),
   });
 
   const scoreMutation = useMutation({
@@ -127,7 +184,14 @@ function OpportunityDetailPage() {
             </Button>
           </Card>
 
-          <Timeline activities={activities as OpportunityActivityRow[]} />
+          <div className="space-y-6">
+            <DocumentsPanel
+              documents={documents as OpportunityDocumentRow[]}
+              isUploading={uploadMutation.isPending}
+              onUpload={(file) => uploadMutation.mutate(file)}
+            />
+            <Timeline activities={activities as OpportunityActivityRow[]} />
+          </div>
         </section>
 
         {opportunity && (
@@ -375,6 +439,57 @@ function Info({ label, value }: { label: string; value: string }) {
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="font-medium mt-1">{value}</div>
     </div>
+  );
+}
+
+function DocumentsPanel({
+  documents,
+  isUploading,
+  onUpload,
+}: {
+  documents: OpportunityDocumentRow[];
+  isUploading: boolean;
+  onUpload: (file: File) => void;
+}) {
+  return (
+    <Card className="p-5 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-accent" />
+          <h2 className="font-semibold">المستندات</h2>
+        </div>
+        <label className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors">
+          <Upload className="h-4 w-4" />
+          {isUploading ? "جارٍ الرفع…" : "رفع"}
+          <input
+            type="file"
+            className="hidden"
+            accept="application/pdf,image/jpeg,image/png,image/webp,.docx,.xlsx"
+            disabled={isUploading}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onUpload(file);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      {documents.length === 0 ? (
+        <div className="text-sm text-muted-foreground">لا توجد مستندات مرفوعة بعد.</div>
+      ) : (
+        <div className="space-y-2">
+          {documents.map((document) => (
+            <div key={document.id} className="rounded-md border border-border p-3 text-sm">
+              <div className="font-medium truncate">{document.title_ar ?? document.file_name}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {(document.file_size_bytes / 1024 / 1024).toFixed(2)} MB •{" "}
+                {new Date(document.created_at).toLocaleDateString("ar-IQ")}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
 

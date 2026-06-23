@@ -49,6 +49,13 @@ export interface OpportunityAiScore {
   readonly next_actions_ar: readonly string[];
 }
 
+/**
+ * Validates unknown OpenAI JSON into a typed AI score payload.
+ */
+export function parseOpportunityAiScore(value: unknown): OpportunityAiScore {
+  return aiScoreSchema.parse(value);
+}
+
 function buildPrompt(opportunity: SpecialOpportunityRow): string {
   return `
 قيّم صحة وجودة فرصة تجارية في سوق B2B للشرق الأوسط.

@@ -100,6 +100,50 @@ export interface OpportunityActivityRow {
   readonly created_at: string;
 }
 
+export interface OpportunityDocumentRow {
+  readonly id: string;
+  readonly opportunity_kind: OpportunityKind;
+  readonly general_opportunity_id: string | null;
+  readonly special_opportunity_id: string | null;
+  readonly uploaded_by: string | null;
+  readonly bucket_id: string;
+  readonly storage_path: string;
+  readonly file_name: string;
+  readonly mime_type: string;
+  readonly file_size_bytes: number;
+  readonly document_type: string;
+  readonly title_ar: string | null;
+  readonly created_at: string;
+  readonly deleted_at: string | null;
+}
+
+export interface CompanyRow {
+  readonly id: string;
+  readonly name: string;
+  readonly name_ar: string | null;
+  readonly country: string | null;
+  readonly city: string | null;
+  readonly website_url: string | null;
+  readonly industry: string | null;
+  readonly description_ar: string | null;
+  readonly trust_score: number;
+  readonly risk_score: number;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface RecommendationRow {
+  readonly id: string;
+  readonly target_kind: "general_opportunity" | "special_opportunity" | "company";
+  readonly general_opportunity_id: string | null;
+  readonly special_opportunity_id: string | null;
+  readonly company_id: string | null;
+  readonly score: number;
+  readonly reason_ar: string;
+  readonly recommendation_type: string;
+  readonly created_at: string;
+}
+
 export interface MarketplaceDatabase {
   public: {
     Tables: {

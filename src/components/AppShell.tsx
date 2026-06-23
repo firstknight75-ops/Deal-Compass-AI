@@ -39,6 +39,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               السوق الذكي
             </Link>
+            <Link
+              to="/intelligence"
+              activeProps={{ className: "bg-secondary text-foreground" }}
+              className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            >
+              الاستخبارات
+            </Link>
             <Button variant="ghost" size="sm" onClick={signOut} className="mr-2">
               <LogOut className="h-4 w-4 ml-1.5" />
               تسجيل الخروج
