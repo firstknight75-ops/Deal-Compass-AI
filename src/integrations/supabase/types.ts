@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      deals: {
+        Row: {
+          company: string | null
+          created_at: string
+          currency: string
+          expected_close_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          owner: string | null
+          probability: number
+          stage: Database["public"]["Enums"]["deal_stage"]
+          updated_at: string
+          user_id: string
+          value_cents: number
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          currency?: string
+          expected_close_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          owner?: string | null
+          probability?: number
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          updated_at?: string
+          user_id: string
+          value_cents?: number
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          currency?: string
+          expected_close_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          owner?: string | null
+          probability?: number
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          updated_at?: string
+          user_id?: string
+          value_cents?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +70,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      deal_stage:
+        | "lead"
+        | "qualified"
+        | "proposal"
+        | "negotiation"
+        | "won"
+        | "lost"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +203,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      deal_stage: [
+        "lead",
+        "qualified",
+        "proposal",
+        "negotiation",
+        "won",
+        "lost",
+      ],
+    },
   },
 } as const
