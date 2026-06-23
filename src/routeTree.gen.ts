@@ -13,7 +13,13 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AuthenticatedRadarRouteImport } from './routes/_authenticated/radar'
+import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated/marketplace'
+import { Route as AuthenticatedIntelligenceRouteImport } from './routes/_authenticated/intelligence'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedMarketplaceOpportunityIdRouteImport } from './routes/_authenticated/marketplace.$opportunityId'
+import { Route as AuthenticatedIntelligenceCompanyIdRouteImport } from './routes/_authenticated/intelligence.$companyId'
+import { Route as AuthenticatedMarketplaceGeneralOpportunityIdRouteImport } from './routes/_authenticated/marketplace.general.$opportunityId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -34,23 +40,70 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRadarRoute = AuthenticatedRadarRouteImport.update({
+  id: '/radar',
+  path: '/radar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMarketplaceRoute =
+  AuthenticatedMarketplaceRouteImport.update({
+    id: '/marketplace',
+    path: '/marketplace',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedIntelligenceRoute =
+  AuthenticatedIntelligenceRouteImport.update({
+    id: '/intelligence',
+    path: '/intelligence',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMarketplaceOpportunityIdRoute =
+  AuthenticatedMarketplaceOpportunityIdRouteImport.update({
+    id: '/$opportunityId',
+    path: '/$opportunityId',
+    getParentRoute: () => AuthenticatedMarketplaceRoute,
+  } as any)
+const AuthenticatedIntelligenceCompanyIdRoute =
+  AuthenticatedIntelligenceCompanyIdRouteImport.update({
+    id: '/$companyId',
+    path: '/$companyId',
+    getParentRoute: () => AuthenticatedIntelligenceRoute,
+  } as any)
+const AuthenticatedMarketplaceGeneralOpportunityIdRoute =
+  AuthenticatedMarketplaceGeneralOpportunityIdRouteImport.update({
+    id: '/general/$opportunityId',
+    path: '/general/$opportunityId',
+    getParentRoute: () => AuthenticatedMarketplaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
+  '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
+  '/radar': typeof AuthenticatedRadarRoute
   '/api/health': typeof ApiHealthRoute
+  '/intelligence/$companyId': typeof AuthenticatedIntelligenceCompanyIdRoute
+  '/marketplace/$opportunityId': typeof AuthenticatedMarketplaceOpportunityIdRoute
+  '/marketplace/general/$opportunityId': typeof AuthenticatedMarketplaceGeneralOpportunityIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
+  '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
+  '/radar': typeof AuthenticatedRadarRoute
   '/api/health': typeof ApiHealthRoute
+  '/intelligence/$companyId': typeof AuthenticatedIntelligenceCompanyIdRoute
+  '/marketplace/$opportunityId': typeof AuthenticatedMarketplaceOpportunityIdRoute
+  '/marketplace/general/$opportunityId': typeof AuthenticatedMarketplaceGeneralOpportunityIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,20 +111,52 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/intelligence': typeof AuthenticatedIntelligenceRouteWithChildren
+  '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
+  '/_authenticated/radar': typeof AuthenticatedRadarRoute
   '/api/health': typeof ApiHealthRoute
+  '/_authenticated/intelligence/$companyId': typeof AuthenticatedIntelligenceCompanyIdRoute
+  '/_authenticated/marketplace/$opportunityId': typeof AuthenticatedMarketplaceOpportunityIdRoute
+  '/_authenticated/marketplace/general/$opportunityId': typeof AuthenticatedMarketplaceGeneralOpportunityIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/api/health'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/intelligence'
+    | '/marketplace'
+    | '/radar'
+    | '/api/health'
+    | '/intelligence/$companyId'
+    | '/marketplace/$opportunityId'
+    | '/marketplace/general/$opportunityId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/api/health'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/intelligence'
+    | '/marketplace'
+    | '/radar'
+    | '/api/health'
+    | '/intelligence/$companyId'
+    | '/marketplace/$opportunityId'
+    | '/marketplace/general/$opportunityId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/intelligence'
+    | '/_authenticated/marketplace'
+    | '/_authenticated/radar'
     | '/api/health'
+    | '/_authenticated/intelligence/$companyId'
+    | '/_authenticated/marketplace/$opportunityId'
+    | '/_authenticated/marketplace/general/$opportunityId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -111,6 +196,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/radar': {
+      id: '/_authenticated/radar'
+      path: '/radar'
+      fullPath: '/radar'
+      preLoaderRoute: typeof AuthenticatedRadarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/marketplace': {
+      id: '/_authenticated/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof AuthenticatedMarketplaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/intelligence': {
+      id: '/_authenticated/intelligence'
+      path: '/intelligence'
+      fullPath: '/intelligence'
+      preLoaderRoute: typeof AuthenticatedIntelligenceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -118,15 +224,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/marketplace/$opportunityId': {
+      id: '/_authenticated/marketplace/$opportunityId'
+      path: '/$opportunityId'
+      fullPath: '/marketplace/$opportunityId'
+      preLoaderRoute: typeof AuthenticatedMarketplaceOpportunityIdRouteImport
+      parentRoute: typeof AuthenticatedMarketplaceRoute
+    }
+    '/_authenticated/intelligence/$companyId': {
+      id: '/_authenticated/intelligence/$companyId'
+      path: '/$companyId'
+      fullPath: '/intelligence/$companyId'
+      preLoaderRoute: typeof AuthenticatedIntelligenceCompanyIdRouteImport
+      parentRoute: typeof AuthenticatedIntelligenceRoute
+    }
+    '/_authenticated/marketplace/general/$opportunityId': {
+      id: '/_authenticated/marketplace/general/$opportunityId'
+      path: '/general/$opportunityId'
+      fullPath: '/marketplace/general/$opportunityId'
+      preLoaderRoute: typeof AuthenticatedMarketplaceGeneralOpportunityIdRouteImport
+      parentRoute: typeof AuthenticatedMarketplaceRoute
+    }
   }
 }
 
+interface AuthenticatedIntelligenceRouteChildren {
+  AuthenticatedIntelligenceCompanyIdRoute: typeof AuthenticatedIntelligenceCompanyIdRoute
+}
+
+const AuthenticatedIntelligenceRouteChildren: AuthenticatedIntelligenceRouteChildren =
+  {
+    AuthenticatedIntelligenceCompanyIdRoute:
+      AuthenticatedIntelligenceCompanyIdRoute,
+  }
+
+const AuthenticatedIntelligenceRouteWithChildren =
+  AuthenticatedIntelligenceRoute._addFileChildren(
+    AuthenticatedIntelligenceRouteChildren,
+  )
+
+interface AuthenticatedMarketplaceRouteChildren {
+  AuthenticatedMarketplaceOpportunityIdRoute: typeof AuthenticatedMarketplaceOpportunityIdRoute
+  AuthenticatedMarketplaceGeneralOpportunityIdRoute: typeof AuthenticatedMarketplaceGeneralOpportunityIdRoute
+}
+
+const AuthenticatedMarketplaceRouteChildren: AuthenticatedMarketplaceRouteChildren =
+  {
+    AuthenticatedMarketplaceOpportunityIdRoute:
+      AuthenticatedMarketplaceOpportunityIdRoute,
+    AuthenticatedMarketplaceGeneralOpportunityIdRoute:
+      AuthenticatedMarketplaceGeneralOpportunityIdRoute,
+  }
+
+const AuthenticatedMarketplaceRouteWithChildren =
+  AuthenticatedMarketplaceRoute._addFileChildren(
+    AuthenticatedMarketplaceRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedIntelligenceRoute: typeof AuthenticatedIntelligenceRouteWithChildren
+  AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRouteWithChildren
+  AuthenticatedRadarRoute: typeof AuthenticatedRadarRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedIntelligenceRoute: AuthenticatedIntelligenceRouteWithChildren,
+  AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRouteWithChildren,
+  AuthenticatedRadarRoute: AuthenticatedRadarRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -141,3 +307,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
