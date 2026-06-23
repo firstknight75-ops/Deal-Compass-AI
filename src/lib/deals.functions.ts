@@ -30,7 +30,7 @@ export const listDeals = createServerFn({ method: "GET" })
 
 export const createDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => dealInput.parse(d))
+  .validator((d: unknown) => dealInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("deals")
@@ -43,7 +43,7 @@ export const createDeal = createServerFn({ method: "POST" })
 
 export const updateDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid(), patch: dealInput.partial() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -59,7 +59,7 @@ export const updateDeal = createServerFn({ method: "POST" })
 
 export const deleteDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("deals").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
